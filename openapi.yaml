@@ -1,16 +1,64 @@
 openapi: 3.1.0
 info:
-  title: Buyer Email Collector API
-  version: 1.0.0
-
+  title: Buyer Search Email Collector API
+  version: 2.0.0
 servers:
-  - url: https://buyer-email-action.onrender.com
-
+  - url: https://YOUR_RENDER_URL
 paths:
+  /search-and-extract-emails:
+    post:
+      operationId: searchAndExtractEmails
+      summary: Search Google results and extract emails from found company domains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Google search query such as gland packing site:.nz -pdf
+                pages:
+                  type: integer
+                  description: Number of Google result pages to search
+                  default: 1
+                country:
+                  type: string
+                  description: Google country code
+                  default: nz
+                language:
+                  type: string
+                  description: Google language code
+                  default: en
+              required:
+                - query
+      responses:
+        "200":
+          description: Search and email extraction completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  query:
+                    type: string
+                  searched_domains:
+                    type: integer
+                  rows:
+                    type: integer
+                  download_url:
+                    type: string
+                  preview:
+                    type: array
+                    items:
+                      type: object
   /extract-emails:
     post:
-      operationId: extractEmails
-      summary: Extract emails from domains
+      operationId: extractEmailsFromDomains
+      summary: Extract emails from given domains using Hunter
       requestBody:
         required: true
         content:
@@ -22,6 +70,23 @@ paths:
                   type: array
                   items:
                     type: string
+              required:
+                - domains
       responses:
         "200":
-          description: Success
+          description: Email extraction completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  rows:
+                    type: integer
+                  download_url:
+                    type: string
+                  preview:
+                    type: array
+                    items:
+                      type: object
