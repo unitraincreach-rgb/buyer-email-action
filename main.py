@@ -90,7 +90,7 @@ def search_google_with_serpapi(query: str, pages: int = 1, country: str = "nz", 
             "hl": language,
         }
 
-        try:
+try:
     response = requests.get(
         "https://serpapi.com/search.json",
         params=params,
