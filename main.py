@@ -12,7 +12,12 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 
-app = FastAPI(title="Buyer Search Email Collector API")
+app = FastAPI(
+    title="Buyer Search Email Collector API",
+    servers=[
+        {"url": "https://buyer-email-action.onrender.com"}
+    ]
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
