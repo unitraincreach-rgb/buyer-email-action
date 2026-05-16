@@ -7,12 +7,18 @@ from urllib.parse import urlparse
 import pandas as pd
 import requests
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 
 app = FastAPI(title="Buyer Search Email Collector API")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
 
