@@ -1,92 +1,82 @@
 openapi: 3.1.0
+
 info:
-  title: Buyer Search Email Collector API
-  version: 2.0.0
+  title: Buyer Email API
+  version: 1.0.0
+  description: API for searching companies and extracting emails
+
 servers:
   - url: https://buyer-email-action.onrender.com
+
 paths:
+  /:
+    get:
+      operationId: home_get
+      summary: Home
+      responses:
+        "200":
+          description: Successful response
+
   /search-and-extract-emails:
     post:
-      operationId: searchAndExtractEmails
-      summary: Search Google results and extract emails from found company domains
+      operationId: search_and_extract_emails
+      summary: Search and extract emails
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - query
               properties:
                 query:
                   type: string
-                  description: Google search query such as gland packing site:.nz -pdf
                 pages:
                   type: integer
-                  description: Number of Google result pages to search
-                  default: 1
+                  default: 3
                 country:
                   type: string
-                  description: Google country code
                   default: nz
                 language:
                   type: string
-                  description: Google language code
                   default: en
-              required:
-                - query
+
       responses:
         "200":
-          description: Search and email extraction completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  query:
-                    type: string
-                  searched_domains:
-                    type: integer
-                  rows:
-                    type: integer
-                  download_url:
-                    type: string
-                  preview:
-                    type: array
-                    items:
-                      type: object
+          description: Success
+
   /extract-emails:
     post:
-      operationId: extractEmailsFromDomains
-      summary: Extract emails from given domains using Hunter
+      operationId: extract_emails
+      summary: Extract emails from URL
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              properties:
-                domains:
-                  type: array
-                  items:
-                    type: string
               required:
-                - domains
+                - url
+              properties:
+                url:
+                  type: string
+
       responses:
         "200":
-          description: Email extraction completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  rows:
-                    type: integer
-                  download_url:
-                    type: string
-                  preview:
-                    type: array
-                    items:
-                      type: object
+          description: Success
+
+  /download/{filename}:
+    get:
+      operationId: download_file
+      summary: Download CSV file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: File download
