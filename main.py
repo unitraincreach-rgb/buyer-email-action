@@ -19,6 +19,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
 
