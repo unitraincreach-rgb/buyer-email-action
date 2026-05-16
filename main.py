@@ -90,8 +90,21 @@ def search_google_with_serpapi(query: str, pages: int = 1, country: str = "nz", 
             "hl": language,
         }
 
-        response = requests.get("https://serpapi.com/search.json", params=params, timeout=30)
-        data = response.json()
+        try:
+    response = requests.get(
+        "https://serpapi.com/search.json",
+        params=params,
+        timeout=30
+    )
+
+    response.raise_for_status()
+    data = response.json()
+
+except Exception as e:
+    return {
+        "status": "error",
+        "message": str(e)
+    }
 
         organic_results = data.get("organic_results", [])
 
