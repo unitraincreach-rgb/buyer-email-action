@@ -1,26 +1,53 @@
 openapi: 3.1.0
 
 info:
-  title: Buyer Email API
-  version: 1.0.0
-  description: API for searching companies and extracting emails
+  title: Unitra Global Buyer Finder API
+  version: 3.0.0
+  description: Unitra buyer finder API for Google Search, Google Maps, LinkedIn-style search, Yellow Pages-style search, Hunter email extraction, and Excel download.
 
 servers:
   - url: https://buyer-email-action.onrender.com
 
 paths:
-  /:
-    get:
-      operationId: home_get
-      summary: Home
+  /find-buyers:
+    post:
+      operationId: findBuyers
+      summary: Find global buyers for a product and create an Excel file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product
+              properties:
+                product:
+                  type: string
+                  description: Product name, for example backing ring or gland packing
+                country:
+                  type: string
+                  description: Target country code such as nz, au, ca, us, uk
+                  default: nz
+                pages:
+                  type: integer
+                  description: Google result pages per keyword. Default is 10.
+                  default: 10
+                language:
+                  type: string
+                  default: en
+                max_keywords:
+                  type: integer
+                  description: Maximum expanded search keywords
+                  default: 8
       responses:
         "200":
-          description: Successful response
+          description: Buyer search completed
 
   /search-and-extract-emails:
     post:
-      operationId: search_and_extract_emails
-      summary: Search and extract emails
+      operationId: searchAndExtractEmails
+      summary: Search Google by direct query and extract emails
       requestBody:
         required: true
         content:
@@ -32,24 +59,24 @@ paths:
               properties:
                 query:
                   type: string
+                  description: Direct Google search query
                 pages:
                   type: integer
-                  default: 3
+                  default: 10
                 country:
                   type: string
                   default: nz
                 language:
                   type: string
                   default: en
-
       responses:
         "200":
-          description: Success
+          description: Search and email extraction completed
 
   /extract-emails:
     post:
-      operationId: extract_emails
-      summary: Extract emails from URL
+      operationId: extractEmails
+      summary: Extract emails from provided domains
       requestBody:
         required: true
         content:
@@ -57,26 +84,26 @@ paths:
             schema:
               type: object
               required:
-                - url
+                - domains
               properties:
-                url:
-                  type: string
-
+                domains:
+                  type: array
+                  items:
+                    type: string
       responses:
         "200":
-          description: Success
+          description: Email extraction completed
 
   /download/{filename}:
     get:
-      operationId: download_file
-      summary: Download CSV file
+      operationId: downloadFile
+      summary: Download Excel file
       parameters:
         - name: filename
           in: path
           required: true
           schema:
             type: string
-
       responses:
         "200":
-          description: File download
+          description: Excel file download
