@@ -100,12 +100,12 @@ def search_google_with_serpapi(query: str, pages: int, country: str, language: s
             response.raise_for_status()
             data = response.json()
 
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"SerpAPI search failed: {str(e)}",
-                "results": [],
-            }
+       except Exception as e:
+    print("ERROR:", str(e))
+    return {
+        "results": [],
+        "error": str(e)
+    }
 
         organic_results = data.get("organic_results", [])
 
