@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Buyer Search Email Collector API",
+    version="1.0.0",
     servers=[{"url": "https://buyer-email-action.onrender.com"}],
 )
 
@@ -26,7 +27,10 @@ app.add_middleware(
 
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://buyer-email-action.onrender.com").rstrip("/")
+PUBLIC_BASE_URL = os.getenv(
+    "PUBLIC_BASE_URL",
+    "https://buyer-email-action.onrender.com"
+).rstrip("/")
 
 FILES_DIR = "files"
 os.makedirs(FILES_DIR, exist_ok=True)
@@ -58,7 +62,7 @@ def normalize_domain(value: str):
     if not domain:
         return None
 
-    blocked = [
+    blocked_domains = [
         "google.com",
         "youtube.com",
         "facebook.com",
@@ -70,7 +74,7 @@ def normalize_domain(value: str):
         "wikipedia.org",
     ]
 
-    if any(bad in domain for bad in blocked):
+    if any(blocked in domain for blocked in blocked_domains):
         return None
 
     return domain
@@ -99,13 +103,15 @@ def search_google_with_serpapi(query: str, pages: int, country: str, language: s
             )
             response.raise_for_status()
             data = response.json()
+            print("SERPAPI RESPONSE:", data)
 
-       except Exception as e:
-         print("ERROR:", str(e))
-         return {
-          "results": [],
-          "error": str(e)
-         }
+        except Exception as e:
+            print("SERPAPI ERROR:", str(e))
+            return {
+                "status": "error",
+                "message": f"SerpAPI search failed: {str(e)}",
+                "results": [],
+            }
 
         organic_results = data.get("organic_results", [])
 
@@ -128,31 +134,35 @@ def search_google_with_serpapi(query: str, pages: int, country: str, language: s
 
         time.sleep(0.5)
 
-    unique = {}
+    unique_results = {}
+
     for item in results:
-        unique[item["domain"]] = item
+        unique_results[item["domain"]] = item
 
     return {
         "status": "success",
-        "message": "search completed",
-        "results": list(unique.values()),
+        "results": list(unique_results.values()),
     }
 
 
 def hunter_domain_search(domain: str):
-    url = "https://api.hunter.io/v2/domain-search"
-
     params = {
         "domain": domain,
         "api_key": HUNTER_API_KEY,
     }
 
     try:
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(
+            "https://api.hunter.io/v2/domain-search",
+            params=params,
+            timeout=30,
+        )
         response.raise_for_status()
         data = response.json()
+        print("HUNTER RESPONSE:", data)
 
     except Exception as e:
+        print("HUNTER ERROR:", str(e))
         return [
             {
                 "domain": domain,
@@ -204,10 +214,16 @@ def home():
 @app.post("/search-and-extract-emails")
 def search_and_extract_emails(request: SearchEmailRequest):
     if not SERPAPI_KEY:
-        return {"status": "error", "message": "SERPAPI_KEY is missing"}
+        return {
+            "status": "error",
+            "message": "SERPAPI_KEY is missing",
+        }
 
     if not HUNTER_API_KEY:
-        return {"status": "error", "message": "HUNTER_API_KEY is missing"}
+        return {
+            "status": "error",
+            "message": "HUNTER_API_KEY is missing",
+        }
 
     search_response = search_google_with_serpapi(
         query=request.query,
@@ -220,7 +236,6 @@ def search_and_extract_emails(request: SearchEmailRequest):
         return search_response
 
     search_results = search_response.get("results", [])
-
     all_rows = []
 
     for item in search_results:
@@ -267,6 +282,12 @@ def search_and_extract_emails(request: SearchEmailRequest):
 
 @app.post("/extract-emails")
 def extract_emails(request: DomainEmailRequest):
+    if not HUNTER_API_KEY:
+        return {
+            "status": "error",
+            "message": "HUNTER_API_KEY is missing",
+        }
+
     all_rows = []
 
     for raw_domain in request.domains:
@@ -277,6 +298,9 @@ def extract_emails(request: DomainEmailRequest):
 
         email_rows = hunter_domain_search(domain)
         all_rows.extend(email_rows)
+
+    if not all_rows:
+        all_rows.append({"message": "처리할 도메인이 없습니다."})
 
     filename = f"domain_email_results_{uuid.uuid4().hex[:8]}.xlsx"
     filepath = os.path.join(FILES_DIR, filename)
