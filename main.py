@@ -320,3 +320,7 @@ def extract_emails(request: DomainEmailRequest):
 def download_file(filename: str):
     filepath = os.path.join(FILES_DIR, filename)
     return FileResponse(filepath, filename=filename)
+    
+@app.get("/openapi.yaml")
+async def get_openapi_yaml():
+    return FileResponse("openapi.yaml", media_type="application/yaml")
