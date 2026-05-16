@@ -383,95 +383,104 @@ def home():
 
 @app.post("/find-buyers")
 def find_buyers(request: BuyerSearchRequest):
-    product = clean_product(request.product)
-    country = request.country.lower()
-    country_info = COUNTRY_MAP.get(country, COUNTRY_MAP["nz"])
-    country_name = country_info["name"]
-    gl = country_info["gl"]
-    pages = max(1, min(int(request.pages), 10))
-    max_keywords = max(1, min(int(request.max_keywords), 12))
+    try:
+        product = clean_product(request.product)
+        country = request.country.lower()
+        country_info = COUNTRY_MAP.get(country, COUNTRY_MAP["nz"])
+        country_name = country_info["name"]
+        gl = country_info["gl"]
+        pages = max(1, min(int(request.pages), 10))
+        max_keywords = max(1, min(int(request.max_keywords), 12))
 
-    keywords = build_keywords(product, country, max_keywords=max_keywords)
+        keywords = build_keywords(product, country, max_keywords=max_keywords)
 
-    lead_map = {}
+        lead_map = {}
 
-    for keyword in keywords:
-        google_response = serpapi_google_search(
-            query=keyword,
-            pages=pages,
-            country=gl,
-            language=request.language,
-        )
-
-        for item in google_response.get("results", []):
-            domain = item.get("domain")
-            if domain and domain not in lead_map:
-                lead_map[domain] = item
-
-        if any(word in keyword.lower() for word in ["supplier", "distributor", "wholesaler"]):
-            maps_response = serpapi_google_maps_search(
+        for keyword in keywords:
+            google_response = serpapi_google_search(
                 query=keyword,
+                pages=pages,
                 country=gl,
                 language=request.language,
             )
 
-            for item in maps_response.get("results", []):
+            for item in google_response.get("results", []):
                 domain = item.get("domain")
                 if domain and domain not in lead_map:
                     lead_map[domain] = item
 
-        time.sleep(0.5)
+            if any(word in keyword.lower() for word in ["supplier", "distributor", "wholesaler"]):
+                maps_response = serpapi_google_maps_search(
+                    query=keyword,
+                    country=gl,
+                    language=request.language,
+                )
 
-    all_rows = []
+                for item in maps_response.get("results", []):
+                    domain = item.get("domain")
+                    if domain and domain not in lead_map:
+                        lead_map[domain] = item
 
-    for domain, item in lead_map.items():
-        email_rows = hunter_domain_search(domain)
-        combined_text = f"{item.get('company_title', '')} {item.get('snippet', '')} {item.get('search_query', '')}"
-        buyer_type = guess_buyer_type(combined_text)
+            time.sleep(0.5)
 
-        for email_row in email_rows:
-            all_rows.append(
-                {
-                    "product": product,
-                    "country": country_name,
-                    "source": item.get("source", ""),
-                    "search_query": item.get("search_query", ""),
-                    "company_title": item.get("company_title", ""),
-                    "buyer_type": buyer_type,
-                    "domain": domain,
-                    "url": item.get("url", ""),
-                    "email": email_row.get("email", ""),
-                    "confidence": email_row.get("confidence", ""),
-                    "email_type": email_row.get("type", ""),
-                    "first_name": email_row.get("first_name", ""),
-                    "last_name": email_row.get("last_name", ""),
-                    "position": email_row.get("position", ""),
-                    "department": email_row.get("department", ""),
-                    "phone": item.get("phone", ""),
-                    "snippet": item.get("snippet", ""),
-                    "send_status": "",
-                    "sent_date": "",
-                    "reply_status": "",
-                    "follow_up_date": "",
-                    "unsubscribe": "",
-                    "error": email_row.get("error", ""),
-                }
-            )
+        all_rows = []
 
-        time.sleep(0.4)
+        for domain, item in lead_map.items():
+            email_rows = hunter_domain_search(domain)
+            combined_text = f"{item.get('company_title', '')} {item.get('snippet', '')} {item.get('search_query', '')}"
+            buyer_type = guess_buyer_type(combined_text)
 
-    filename = make_excel(all_rows, "unitra_buyer_results")
+            for email_row in email_rows:
+                all_rows.append(
+                    {
+                        "product": product,
+                        "country": country_name,
+                        "source": item.get("source", ""),
+                        "search_query": item.get("search_query", ""),
+                        "company_title": item.get("company_title", ""),
+                        "buyer_type": buyer_type,
+                        "domain": domain,
+                        "url": item.get("url", ""),
+                        "email": email_row.get("email", ""),
+                        "confidence": email_row.get("confidence", ""),
+                        "email_type": email_row.get("type", ""),
+                        "first_name": email_row.get("first_name", ""),
+                        "last_name": email_row.get("last_name", ""),
+                        "position": email_row.get("position", ""),
+                        "department": email_row.get("department", ""),
+                        "phone": item.get("phone", ""),
+                        "snippet": item.get("snippet", ""),
+                        "send_status": "",
+                        "sent_date": "",
+                        "reply_status": "",
+                        "follow_up_date": "",
+                        "unsubscribe": "",
+                        "error": email_row.get("error", ""),
+                    }
+                )
 
-    return {
-        "status": "success",
-        "product": product,
-        "country": country_name,
-        "keywords_used": keywords,
-        "unique_domains": len(lead_map),
-        "rows": len(all_rows),
-        "download_url": f"{PUBLIC_BASE_URL}/download/{filename}",
-        "preview": all_rows[:20],
-    }
+            time.sleep(0.4)
+
+        filename = make_excel(all_rows, "unitra_buyer_results")
+
+        return {
+            "status": "success",
+            "product": product,
+            "country": country_name,
+            "keywords_used": keywords,
+            "unique_domains": len(lead_map),
+            "rows": len(all_rows),
+            "download_url": f"{PUBLIC_BASE_URL}/download/{filename}",
+            "preview": all_rows[:20],
+        }
+
+    except Exception as e:
+        print("FIND BUYERS ERROR:", str(e))
+
+        return {
+            "status": "error",
+            "message": str(e),
+        }
 
 
 @app.post("/search-and-extract-emails")
