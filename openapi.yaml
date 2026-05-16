@@ -3,7 +3,7 @@ info:
   title: Buyer Search Email Collector API
   version: 2.0.0
 servers:
-  - url: https://YOUR_RENDER_URL
+  - url: https://buyer-email-action.onrender.com
 paths:
   /search-and-extract-emails:
     post:
