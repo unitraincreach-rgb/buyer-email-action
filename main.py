@@ -105,8 +105,8 @@ except Exception as e:
         "status": "error",
         "message": str(e)
     }
-
-        organic_results = data.get("organic_results", [])
+    
+organic_results = data.get("organic_results", [])
 
         for item in organic_results:
             link = item.get("link")
