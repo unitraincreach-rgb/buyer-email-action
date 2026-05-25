@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-
+from typing import List
 
 app = FastAPI(
     title="Unitra Global Buyer Finder API",
@@ -52,7 +52,16 @@ class BuyerSearchRequest(BaseModel):
     pages: int = Field(10, description="Google result pages per keyword. Default 10")
     language: str = Field("en", description="Google language code")
     max_keywords: int = Field(8, description="Maximum expanded keywords to search")
-
+    
+class BuyerSearchResponse(BaseModel):
+    status: str
+    product: str
+    country: str
+    keywords_used: List[str]
+    unique_domains: int
+    rows: int
+    download_url: str
+    preview: List[dict]
 
 class SearchEmailRequest(BaseModel):
     query: str = Field(..., description="Direct Google search query")
@@ -381,7 +390,7 @@ def home():
     }
 
 
-@app.post("/find-buyers")
+@app.post("/find-buyers", response_model=BuyerSearchResponse)
 def find_buyers(request: BuyerSearchRequest):
     try:
         product = clean_product(request.product)
